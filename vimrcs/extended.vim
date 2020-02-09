@@ -28,8 +28,11 @@ set guioptions-=l
 set guioptions-=L
 
 " Colorscheme
-set background=dark
-colorscheme peaksea
+syntax enable
+" set background=dark
+set termguicolors
+let ayucolor="mirage"
+colorscheme ayu
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

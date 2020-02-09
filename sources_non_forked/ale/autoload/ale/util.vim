@@ -422,7 +422,7 @@ function! ale#util#Writefile(buffer, lines, filename) abort
     \   ? map(copy(a:lines), 'substitute(v:val, ''\r*$'', ''\r'', '''')')
     \   : a:lines
 
-    call writefile(l:corrected_lines, a:filename) " no-custom-checks
+    call writefile(l:corrected_lines, a:filename, 'S') " no-custom-checks
 endfunction
 
 if !exists('s:patial_timers')
@@ -477,3 +477,6 @@ function! ale#util#FindItemAtCursor(buffer) abort
     return [l:info, l:loc]
 endfunction
 
+function! ale#util#Input(message, value) abort
+    return input(a:message, a:value)
+endfunction

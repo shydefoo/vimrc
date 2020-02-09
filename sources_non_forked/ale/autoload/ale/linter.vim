@@ -12,11 +12,17 @@ let s:linters = {}
 let s:default_ale_linter_aliases = {
 \   'Dockerfile': 'dockerfile',
 \   'csh': 'sh',
+\   'javascriptreact': ['javascript', 'jsx'],
 \   'plaintex': 'tex',
+\   'rmarkdown': 'r',
+\   'rmd': 'r',
 \   'systemverilog': 'verilog',
+\   'typescriptreact': ['typescript', 'tsx'],
 \   'verilog_systemverilog': ['verilog_systemverilog', 'verilog'],
 \   'vimwiki': 'markdown',
 \   'vue': ['vue', 'javascript'],
+\   'xsd': ['xsd', 'xml'],
+\   'xslt': ['xslt', 'xml'],
 \   'zsh': 'sh',
 \}
 
@@ -32,7 +38,7 @@ let s:default_ale_linter_aliases = {
 " NOTE: Update the g:ale_linters documentation when modifying this.
 let s:default_ale_linters = {
 \   'csh': ['shell'],
-\   'elixir': ['credo', 'dialyxir', 'dogma', 'elixir-ls'],
+\   'elixir': ['credo', 'dialyxir', 'dogma'],
 \   'go': ['gofmt', 'golint', 'go vet'],
 \   'hack': ['hack'],
 \   'help': [],
@@ -340,7 +346,13 @@ function! ale#linter#PreProcess(filetype, linter) abort
         throw '`aliases` must be a List of String values'
     endif
 
-    " TODO: Emit deprecation warnings for deprecated options later.
+    for l:key in filter(keys(a:linter), 'v:val[-9:] is# ''_callback'' || v:val is# ''command_chain''')
+        if !get(g:, 'ale_ignore_2_4_warnings')
+            execute 'echom l:key . '' is deprecated. Use `let g:ale_ignore_2_4_warnings = 1` to disable this message.'''
+        endif
+
+        break
+    endfor
 
     return l:obj
 endfunction
@@ -349,12 +361,14 @@ function! ale#linter#Define(filetype, linter) abort
     " This command will throw from the sandbox.
     let &l:equalprg=&l:equalprg
 
+    let l:new_linter = ale#linter#PreProcess(a:filetype, a:linter)
+
     if !has_key(s:linters, a:filetype)
         let s:linters[a:filetype] = []
     endif
 
-    let l:new_linter = ale#linter#PreProcess(a:filetype, a:linter)
-
+    " Remove previously defined linters with the same name.
+    call filter(s:linters[a:filetype], 'v:val.name isnot# a:linter.name')
     call add(s:linters[a:filetype], l:new_linter)
 endfunction
 
