@@ -124,7 +124,7 @@ if has('nvim')
 endif
 
 " for fzf
-set rtp+=~/.fzf
+set rtp+=/usr/local/opt/fzf
 map <leader>f :FZF<CR>
 
 hi TabLine      guifg=#999 guibg=#222 gui=none ctermfg=254 ctermbg=238 cterm=none
@@ -165,5 +165,9 @@ let g:ack_use_dispatch = 1
 " cwindow
 nnoremap <leader>c :ccl<CR>
 nnoremap <leader>cw :cope<CR>
+
+
+" nerdtree
+let g:NERDTreeWinPos = "right"
 
 set updatetime=300
