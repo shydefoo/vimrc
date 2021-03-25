@@ -1,7 +1,7 @@
 ## Main
 # main
 snippet main
-	int main(int argc, const char *argv[])
+	int main(int argc, char *argv[])
 	{
 		${0}
 		return 0;
@@ -344,3 +344,10 @@ snippet todo
 # This is kind of convenient
 snippet .
 	[${1}]
+
+snippet asm
+	__asm__ __volatile__(
+	"${0}\n\t"
+	:
+	:
+	);

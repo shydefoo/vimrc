@@ -5,12 +5,21 @@ nnoremap <leader>jr :YcmCompleter GoToReferences<CR>
 nnoremap <leader>jt :YcmCompleter GetType<CR>
 nnoremap <leader>jw :YcmCompleter GetDoc<CR>
 nnoremap <leader>yr :YcmCompleter RefactorRename
+let g:ycm_error_symbol='>>'
+let g:ycm_warning_symbol='>-'
 
 " mapping for go
 autocmd FileType go nnoremap <buffer> <leader>jd :GoDef<CR>
+autocmd FileType go nnoremap <buffer> <leader>jr :GoReferrers<CR>
+autocmd FileType go nnoremap <buffer> <leader>jt :GoDefType<CR>
+autocmd FileType go nnoremap <buffer> <leader>jw :GoDoc<CR>
+
+" workaround vim-go's folding bug
+" let g:go_fmt_experimental = 1
+let g:go_fmt_command='gopls'
 
 set encoding=utf8
-let g:ycm_goto_buffer_command = 'split'
+let g:ycm_goto_buffer_command = 'same-buffer'
 " set linespace
 set linespace=3
 
@@ -19,25 +28,35 @@ set linespace=3
 let g:ale_fixers = {
 \   'javascript': ['prettier', 'eslint'],
 \   'python': ['black', 'isort'],
-\   'go':['gofmt', 'goimports'],
+\   'go':['gofmt'],
 \    'xml': ['xmllint']
 \}
 
 
 let g:ale_linters = {
 \   'javascript': ['eslint', 'prettier'],
-\   'python': ['flake8', 'mypy'],
-\   'go': ['golangci-lint'],
+\   'python': ['flake8', 'mypy', 'pylint'],
+\   'go': []
 \}
 
-let g:black_skip_string_normalization = 1
+" let g:black_skip_string_normalization = 1
 map <leader>fx :ALEFix<CR>
 
-let g:ale_set_highlights = 1
+highlight ALEWarning ctermbg=DarkMagenta
+
+let g:ale_sign_error='**'
+let g:ale_sign_warning='*-'
+let g:ale_set_signs=1
+
+" let g:ale_set_highlights = 1
 let g:ale_fix_on_save = 1
 let g:ale_lint_on_text_changed = 0
 let g:ale_open_list = 0
-let g:ale_lint_on_insert_leave = 0
+let g:ale_lint_on_insert_leave = 1
+" let g:ale_python_black_options = "--line-length 88 --skip-string-normalization"
+let g:ale_go_golangci_lint_options = ''
+let g:ale_go_golangci_lint_package = 1
+
 
 " use goimports for formatting
 let g:go_fmt_command = "goimports"
@@ -50,7 +69,7 @@ let g:go_highlight_structs = 1
 let g:go_highlight_operators = 1
 let g:go_highlight_build_constraints = 1
 
-let g:xml_syntax_folding = 0 
+let g:xml_syntax_folding = 0
 let g:vim_markdown_folding_disabled = 1
 
 " disable other diagnostic tools for java
@@ -76,7 +95,8 @@ endfunction
 autocmd CursorMoved silent * call SetProjectRoot() 
 map <leader>spr :call SetProjectRoot()<CR>
 
-let g:airline_theme = "base16_spacemacs"
+" let g:airline_theme = "base16_spacemacs"
+let g:solarized_statusline = "normal"
 
 map <leader><c-p> :ALEHover<CR>
 let g:syntastic_python_pylint_post_args="--max-line-length=120"
@@ -94,6 +114,8 @@ map <leader>fp :echo @%<cr>
 " display ale errors in statusline
 let g:airline#extensions#ale#enabled = 1
 map <leader>fmm :set foldmethod=marker<CR>
+map <leader>fms :set foldmethod=syntax<CR>
+map <leader>fmi :set foldmethod=indent<CR>
 
 set redrawtime=10000
 
@@ -121,6 +143,8 @@ let g:github_enterprise_urls = ['https://github.wdf.sap.corp']
 
 if has('nvim')
   tnoremap <Esc> <C-\><C-n>
+  " always use clipboard for all operations 
+  set clipboard +=unnamedplus
 endif
 
 " for fzf
@@ -169,5 +193,39 @@ nnoremap <leader>cw :cope<CR>
 
 " nerdtree
 let g:NERDTreeWinPos = "right"
+let g:NERDTreeQuitOnOpen = 1
 
-set updatetime=300
+nmap <leader>nf :NERDTreeFind<CR>
+
+set updatetime=30
+
+" airline
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#formatter = 'unique_tail'
+
+" let g:airline#extensions#tabline#buffer_idx_mode = 1
+"
+
+" instant markdown disable autostart
+let g:instant_markdown_autostart = 0
+
+
+let g:solarized_term_italics = 0
+let g:solarized_italics = 0
+
+
+let g:localvimrc_whitelist=['/Users/i519975/repos/']
+set listchars=tab:!·,trail:·
+
+
+" pydocstring
+nmap <silent> <C-m> <Plug>(pydocstring)
+
+" markdown preview
+let g:mkdp_echo_preview_url = 1
+
+" set snipmate version
+let g:snipMate = { 'snippet_version' : 1 }
+
+" copy filepath of current buffer to register
+:nmap <leader>cp :let @" = expand("%")<cr>

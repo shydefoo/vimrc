@@ -5,7 +5,7 @@
 " Name Of File: prettier.vim
 "  Description: A vim plugin wrapper for prettier, pre-configured with custom default prettier settings.
 "   Maintainer: Mitermayer Reis <mitermayer.reis at gmail.com>
-"      Version: 1.0.0-alpha
+"      Version: 1.0.0-beta
 "        Usage: Use :help vim-prettier-usage, or visit https://github.com/prettier/vim-prettier
 "
 "==========================================================================================================
@@ -36,9 +36,15 @@ endfunction
 
 " Allows @format and @prettier pragma support upon saving
 function! prettier#Autoformat(...) abort
-  call prettier#Prettier(1, 1, line('$'), 0, {
-    \ 'requirePragma': g:prettier#autoformat_require_pragma ? 'true' : 'false'
-    \ })
+  let l:autoformat = g:prettier#autoformat_config_present ?
+        \ prettier#IsConfigPresent(g:prettier#autoformat_config_files) :
+        \ g:prettier#autoformat
+
+  if l:autoformat
+    call prettier#Prettier(1, 1, line('$'), 0, {
+      \ 'requirePragma': g:prettier#autoformat_require_pragma ? 'true' : 'false'
+      \ })
+  endif
 endfunction
 
 " Main prettier command

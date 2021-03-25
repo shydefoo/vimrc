@@ -1,7 +1,6 @@
 my_plugins:
 - QFEnter https://github.com/yssl/QFEnter.git
 - ayu-vim https://github.com/ayu-theme/ayu-vim.git
-- dispatch https://tpope.io/vim/dispatch.git
 - dracula https://github.com/dracula/vim.git
 - fzf.vim https://github.com/junegunn/fzf.vim.git
 - git-messenger.vim https://github.com/rhysd/git-messenger.vim.git
@@ -22,12 +21,18 @@ my_plugins:
 - vim-rhubarb https://github.com/tpope/vim-rhubarb.git
 - vim-signature https://github.com/kshenoy/vim-signature.git
 - black https://github.com/psf/black.git
+- vim-flog https://github.com/rbong/vim-flog.git
+- vim-dispatch https://github.com/tpope/vim-dispatch.git
+- vim-obsession https://github.com/tpope/vim-obsession.git
+- bufexplorer https://github.com/jlanzarotta/bufexplorer.git
+- vim-solarized8 https://github.com/lifepillar/vim-solarized8.git
+- vim-pydocstring https://github.com/heavenshell/vim-pydocstring.git
+- markdown-preview.nvim https://github.com/iamcco/markdown-preview.nvim.git
 sources_non_forked:
 - auto-pairs https://github.com/jiangmiao/auto-pairs
 - ale https://github.com/w0rp/ale
 - vim-yankstack https://github.com/maxbrunsfeld/vim-yankstack
 - ack.vim https://github.com/mileszs/ack.vim
-- bufexplorer https://github.com/corntrace/bufexplorer
 - ctrlp.vim https://github.com/ctrlpvim/ctrlp.vim
 - mayansmoke https://github.com/vim-scripts/mayansmoke
 - nerdtree https://github.com/scrooloose/nerdtree

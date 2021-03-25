@@ -8,7 +8,7 @@ Author: Mitermayer Reis <mitermayer.reis@gmail.com>
 WebSite: https://prettier.io/
 Repository: https://github.com/prettier/vim-prettier
 License: MIT style license
-Version: 1.0.0-alpha
+Version: 1.0.0-beta
 
 ==============================================================================
 CONTENTS                                                *vim-prettier-contents*
@@ -158,6 +158,17 @@ Running before saving, changing text or leaving insert mode:
   let g:prettier#quickfix_enabled = 0
   autocmd BufWritePre,TextChanged,InsertLeave *.js,*.jsx,*.mjs,*.ts,*.tsx,*.css,*.less,*.scss,*.json,*.graphql,*.md,*.vue,*.yaml,*.html PrettierAsync
 <
+Buffer-level custom commands
+
+To use an alternative command, like `prettier-stylelint`, set this at the
+buffer level with `b:prettier_exec_cmd`, e.g.:
+>
+  au FileType css,scss let b:prettier_exec_cmd = "prettier-stylelint"
+<
+vim-prettier will look for the executable in the same places it looks for
+`prettier`, and will fall back to `prettier` if it can't find
+`b:prettier_exec_cmd`
+
 Overwrite default prettier configuration
 
 **Note:** vim-prettier default settings differ from prettier intentionally. 
@@ -195,8 +206,13 @@ However they can be configured by:
 
   " false|true
   " default: 'false'
-  let g:prettier#config#require_pragma = 'false'
-<
+  " let g:prettier#config#require_pragma = 'false'
+
+  " Define the flavor of line endings
+  " lf|crlf|cr|all
+  " defaut: 'lf' 
+  let g:prettier#config#end_of_line = get(g:, 'prettier#config#end_of_line', 'lf')
+
 ==============================================================================
 REQUIREMENT(S)                                      *vim-prettier-requirements*
 

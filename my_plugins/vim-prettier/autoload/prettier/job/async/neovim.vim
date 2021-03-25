@@ -42,6 +42,8 @@ endfunction
 "
 "  note that somehow we exectuing both async and sync on nvim when using the autoformat
 function! s:onExit(status, info, out, err) abort
+  if len(a:out) == 0 | return | endif
+
   let l:currentBufferNumber =  bufnr('%')
   let l:isInsideAnotherBuffer = a:info.buf_nr != l:currentBufferNumber ? 1 : 0
   let l:last = a:out[len(a:out) - 1]
@@ -55,11 +57,12 @@ function! s:onExit(status, info, out, err) abort
   endif
 
   " we have no prettier output so lets exit
-  if len(a:out) == 0 | return | endif
+  if len(l:out) == 0 | return | endif
 
   " nothing to update
   if (prettier#utils#buffer#willUpdatedLinesChangeBuffer(l:out, a:info.start, a:info.end) == 0)
     let s:prettier_job_running = 0
+    redraw!
     return
   endif
 
@@ -72,8 +75,7 @@ function! s:onExit(status, info, out, err) abort
     if (bufloaded(a:info.buf_nr))
       try
         silent exec 'sp '. escape(bufname(a:info.buf_nr), ' \')
-        call nvim_buf_set_lines(a:info.buf_nr, a:info.start, a:info.end, 0, l:out)
-        noautocmd write
+        call prettier#utils#buffer#replaceAndSave(l:out, a:info.start, a:info.end)
       catch
         call prettier#logging#error#log('PARSING_ERROR')
       finally
@@ -84,15 +86,7 @@ function! s:onExit(status, info, out, err) abort
       endtry
     endif
   else 
-      " TODO
-      " move this to the buffer util and let it abstract away the saving buffer
-      " from here
-      "
-      " TODO
-      " we should be auto saving in order to work similar to vim8
-    call nvim_buf_set_lines(a:info.buf_nr, a:info.start, a:info.end, 0, l:out)
-    noautocmd write
+    call prettier#utils#buffer#replaceAndSave(l:out, a:info.start, a:info.end)
   endif
-
   let s:prettier_job_running = 0
 endfunction

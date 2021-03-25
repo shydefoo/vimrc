@@ -4,6 +4,8 @@ call themis#option('exclude', 'test/Guardfile')
 if $THEMIS_PROFILE !=# ''
   execute 'profile' 'start' $THEMIS_PROFILE
   profile! file ./autoload/*
+  profile! file ./plugin/*
+  profile! file ./syntax/*
 endif
 
 let s:helper = themis#helper('assert')
@@ -57,7 +59,7 @@ function! WaitWhile(func, ...) abort
 endfunction
 
 function! Git(dir, ...) abort
-    let cmd = join(['git', '-C', a:dir] + a:000, ' ')
+    let cmd = join(['git', '-C', shellescape(a:dir)] + a:000, ' ')
     let out = system(cmd)
     if v:shell_error
         throw '`' . cmd . '` failed: ' . out

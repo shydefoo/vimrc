@@ -13,12 +13,13 @@ Variables               |git-messenger-variables|
 Highlights              |git-messenger-highlights|
 Popup Window Config     |git-messenger-popup-window-config|
 Health Check            |git-messenger-health-check|
+Known Issues            |git-messenger-known-issues|
 Repository              |git-messenger-repository-page|
 License                 |git-messenger-license|
 
 
 ==============================================================================
-SCREENSHOT                                            *git-messenger-screenshot*
+INTRODUCTION                                        *git-messenger-introduction*
 
 *git-messenger.vim* is a Vim/Neovim plugin to reveal the hidden message under
 the cursor quickly. It shows the last commit message under the cursor in popup
@@ -42,7 +43,7 @@ If you see some error message, please try |git-messenger-health-check|.
 
 
 ==============================================================================
-SCREENCAST                                            *git-messenger-screencast*
+SCREENSHOT                                            *git-messenger-screenshot*
 
 1. Show popup window with Neovim v0.4.0-dev
 
@@ -61,6 +62,10 @@ You may be also interested in |g:git_messenger_include_diff|
 
 ==============================================================================
 INSTALL                                                  *git-messenger-install*
+
+Please ensure the following requirement before installing this plugin.
+
+- Git v1.8.5 (for -C option of "git" command)
 
 If you use any package manager, please follow its instruction.
 
@@ -107,6 +112,8 @@ COMMANDS                                                *git-messenger-commands*
   - Committer: Committer name and mail address of the commit when
     committer is different from author
   - Date: Author date of the commit in system format
+    - When a committer date and an author date are different, both
+      'Author Date' and 'Committer Date' are shown
   - Summary: First line after a date header line is a summary of commit
   - Body: After summary, commit body is put (if the commit has body)
 
@@ -126,8 +133,10 @@ COMMANDS                                                *git-messenger-commands*
   |    q    | Close the popup window                                       |
   |    o    | "o"lder. Back to older commit at the line                    |
   |    O    | Opposite to older. Forward to newer commit at the line       |
-  |    d    | Toggle diff hunks only related to current file in the commit |
-  |    D    | Toggle all diff hunks in the commit                          |
+  |    d    | Toggle unified diff hunks only in current file of the commit |
+  |    D    | Toggle all unified diff hunks of the commit                  |
+  |    r    | Toggle word diff hunks only in current file of the commit    |
+  |    R    | Toggle all word diff hunks of the commit                     |
   |    ?    | Show mappings help                                           |
 
 *:GitMessengerClose*
@@ -140,8 +149,8 @@ COMMANDS                                                *git-messenger-commands*
 ==============================================================================
 MAPPINGS                                                *git-messenger-mappings*
 
-Some <Plug> mappings are available to operate a popup window. They can be mapped to your favorite
-key sequences. For example:
+Some <Plug> mappings are available to operate a popup window. They can be
+mapped to your favorite key sequences. For example:
 
 *<Plug>(git-messenger)*
 
@@ -196,8 +205,8 @@ Some global variables are available to configure the behavior of this plugin.
 
   When this value is set to |v:true|, a popup window includes diff hunks of the
   commit by default.
-  Note: Typing "d" in popup window reveals diff hunks even if this value is
-  set to |v:false|.
+  Note: Typing "d" or "r" in popup window reveals diff hunks even if this
+  value is set to |v:false|.
 
   One of "none", "current", "all".
 
@@ -205,8 +214,8 @@ Some global variables are available to configure the behavior of this plugin.
   the commit at showing up. "current" includes diff hunks of only current file
   in the commit. "all" includes all diff hunks in the commit.
 
-  Note: Typing d and D mappings in popup window reveal diff hunks even if this
-  value is set to "none".
+  Note: Typing d/D or r/R mappings in popup window reveal diff hunks even if
+  this value is set to "none".
 
 *g:git_messenger_git_command* (Default: "git")
 
@@ -255,6 +264,18 @@ limit.
 Max characters of popup window in an integer value. Setting |v:null| means no
 limit.
 
+*g:git_messenger_date_format* (Default: "%c")
+
+String value to format dates in popup window. Please see |strftime()| to know
+the details of the format.
+>
+  " Example: '2019 May 26 03:27:43'
+  let g:git_messenger_date_format = "%Y %b %d %X"
+<
+*g:git_messenger_conceal_word_diff_marker* (Default: |v:true|)
+
+When this value is set to |v:true|, markers for word diffs like "[-", "-]",
+"{+", "+}" are concealed. Set |v:false| when you don't want to hide them.
 
 ==============================================================================
 HIGHLIGHTS                                            *git-messenger-highlights*
@@ -330,6 +351,15 @@ run `:checkhealth` on Vim.
   :CheckHealth
 <
 https://github.com/rhysd/vim-healthcheck
+
+
+==============================================================================
+KNOWN ISSUES                                        *git-messenger-known-issues*
+
+1.
+On Windows, `git` command installed via MSYS does not work. Please use
+Git for Windows for now. This issue is tracked at
+https://github.com/rhysd/git-messenger.vim/issues/57
 
 
 ==============================================================================
