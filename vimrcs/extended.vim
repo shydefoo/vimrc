@@ -30,10 +30,15 @@ set guioptions-=L
 " Colorscheme
 syntax enable
 " set background=dark
-set termguicolors
-let ayucolor="mirage"
-colorscheme ayu
 
+" colorscehem ayu
+" set termguicolors
+" let ayucolor="mirage"
+" colorscheme ayu
+
+set termguicolors
+set background=light
+colorscheme solarized8
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Fast editing and reloading of vimrc configs
@@ -88,7 +93,8 @@ vnoremap $2 <esc>`>a]<esc>`<i[<esc>
 vnoremap $3 <esc>`>a}<esc>`<i{<esc>
 vnoremap $$ <esc>`>a"<esc>`<i"<esc>
 vnoremap $q <esc>`>a'<esc>`<i'<esc>
-vnoremap $e <esc>`>a"<esc>`<i"<esc>
+vnoremap $t <esc>`>a`<esc>`<i`<esc>
+vnoremap $6 <esc>`>a~<esc>`<i~<esc>
 
 " Map auto complete of (, ", ', [
 inoremap $1 ()<esc>i

@@ -5,7 +5,7 @@
 " Name Of File: prettier.vim
 "  Description: A vim plugin wrapper for prettier, pre-configured with custom default prettier settings.
 "   Maintainer: Mitermayer Reis <mitermayer.reis at gmail.com>
-"      Version: 1.0.0-alpha
+"      Version: 1.0.0-beta
 "        Usage: Use :help vim-prettier-usage, or visit https://github.com/prettier/vim-prettier
 "
 "==========================================================================================================
@@ -33,7 +33,7 @@ let g:prettier#autoformat_config_files = get(g:, 'prettier#autoformat_config_fil
       \'.prettierrc.yaml',
       \'.prettierrc.js',
       \'.prettierrc.config.js',
-      \'.prettierrc.json'
+      \'.prettierrc.json',
       \'.prettierrc.toml'])
 
 " path to prettier cli
@@ -59,61 +59,80 @@ let g:prettier#preset#config = get(g:,'prettier#preset#config', 'default')
 " Max line length that prettier will wrap on: a number or 'auto' (use
 " textwidth).
 " default: 'auto'
+" See more: https://prettier.io/docs/en/options.html#print-width
 let g:prettier#config#print_width = get(g:, 'prettier#config#print_width', 'auto')
 
 " number of spaces per indentation level: a number or 'auto' (use
 " softtabstop)
 " default: 'auto'
+" See more: https://prettier.io/docs/en/options.html#tab-width
 let g:prettier#config#tab_width = get(g:,'prettier#config#tab_width', 'auto')
 
 " use tabs instead of spaces: true, false, or auto (use the expandtab setting).
 " default: 'auto'
+" See more: https://prettier.io/docs/en/options.html#tabs
 let g:prettier#config#use_tabs = get(g:,'prettier#config#use_tabs', 'auto')
 
 " flow|babylon|typescript|css|less|scss|json|graphql|markdown or empty string
 " (let prettier choose).
 " default: ''
+" See more: https://prettier.io/docs/en/options.html#parser
 let g:prettier#config#parser = get(g:,'prettier#config#parser', '')
 
 " cli-override|file-override|prefer-file
 " default: 'file-override'
+" See more: https://prettier.io/docs/en/cli.html#--config-precedence
 let g:prettier#config#config_precedence = get(g:, 'prettier#config#config_precedence', 'file-override')
 
 " always|never|preserve
 " default: 'preserve'
+" See more: https://prettier.io/docs/en/options.html#prose-wrap
 let g:prettier#config#prose_wrap = get(g:, 'prettier#config#prose_wrap', 'preserve')
 
 " css|strict|ignore
 " default: 'css'
+" See more: https://prettier.io/docs/en/options.html#html-whitespace-sensitivity
 let g:prettier#config#html_whitespace_sensitivity = get(g:, 'prettier#config#html_whitespace_sensitivity', 'css')
 
 " print semicolons
 " default: 'true'
+" See more: https://prettier.io/docs/en/options.html#semicolons
 let g:prettier#config#semi = get(g:,'prettier#config#semi', 'true')
 
 " Use single quotes instead of double quotes.
 " default: 'false'
+" See more: https://prettier.io/docs/en/options.html#quotes
 let g:prettier#config#single_quote = get(g:,'prettier#config#single_quote', 'false')
 
 " print spaces between brackets
 " default: 'true'
+" See more: https://prettier.io/docs/en/options.html#bracket-spacing
 let g:prettier#config#bracket_spacing = get(g:,'prettier#config#bracket_spacing', 'true')
 
 " put > on the last line instead of new line
 " default: 'false'
+" See more: https://prettier.io/docs/en/options.html#jsx-brackets
 let g:prettier#config#jsx_bracket_same_line = get(g:,'prettier#config#jsx_bracket_same_line', 'false')
 
 " avoid wrapping a single arrow function param in parens
 " avoid|always
-" default: 'avoid'
-let g:prettier#config#arrow_parens = get(g:,'prettier#config#arrow_parens', 'avoid')
+" default: 'always'
+" See more: https://prettier.io/docs/en/options.html#arrow-function-parentheses
+let g:prettier#config#arrow_parens = get(g:,'prettier#config#arrow_parens', 'always')
+
+" Define the flavor of line endings
+" lf|crlf|cr|all
+" defaut: 'lf' 
+let g:prettier#config#end_of_line = get(g:, 'prettier#config#end_of_line', 'lf')
 
 " Print trailing commas wherever possible when multi-line.
 " none|es5|all
-" default: 'none'
-let g:prettier#config#trailing_comma = get(g:,'prettier#config#trailing_comma', 'none')
+" default: 'es5'
+" See more: https://prettier.io/docs/en/options.html#trailing-commas
+let g:prettier#config#trailing_comma = get(g:,'prettier#config#trailing_comma', 'es5')
 
 " restrict itself to only format files that contain a special comment @prettier or @format
+" See more: https://prettier.io/docs/en/options.html#require-pragma
 let g:prettier#config#require_pragma=  get(g:, 'prettier#config#require_pragma', 'false')
 
 " synchronous by default
@@ -123,7 +142,7 @@ command! -nargs=? -range=% Prettier call prettier#Prettier(g:prettier#exec_cmd_a
 command! -nargs=? -range=% PrettierAsync call prettier#Prettier(1, <line1>, <line2>, g:prettier#partial_format)
 
 " prints vim-prettier version
-command! -nargs=? -range=% PrettierVersion echom '1.0.0-alpha'
+command! -nargs=? -range=% PrettierVersion echom '1.0.0-beta'
 
 " call prettier cli
 command! -nargs=? -range=% PrettierCli call prettier#PrettierCli(<q-args>)
@@ -155,15 +174,5 @@ nnoremap <silent> <Plug>(PrettierCliPath) :PrettierCliPath<CR>
 
 augroup Prettier
   autocmd!
-  if g:prettier#autoformat_config_present
-    if prettier#IsConfigPresent(g:prettier#autoformat_config_files)
-      let g:prettier#autoformat = 1
-    else
-      let g:prettier#autoformat = 0
-    endif
-  endif
-
-  if g:prettier#autoformat
-    autocmd BufWritePre *.js,*.jsx,*.mjs,*.ts,*.tsx,*.css,*.less,*.scss,*.json,*.graphql,*.md,*.vue,*.yaml,*.html noautocmd | call prettier#Autoformat()
-  endif
+  autocmd BufWritePre *.js,*.jsx,*.mjs,*.ts,*.tsx,*.css,*.less,*.scss,*.json,*.graphql,*.gql,*.markdown,*.md,*.mdown,*.mkd,*.mkdn,*.mdx,*.vue,*.yml,*.yaml,*.html,*.php,*.rb,*.ruby,*.xml noautocmd call prettier#Autoformat()
 augroup end

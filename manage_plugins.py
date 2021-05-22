@@ -1,14 +1,15 @@
-from typing import Dict
-import yaml
-from os import path
-import requests
-import zipfile
+import re
 import shutil
 import tempfile
+import zipfile
 from concurrent import futures
 from functools import partial
+from os import path
+from typing import Dict
+
 import click
-import re
+import requests
+import yaml
 
 my_plugins = "plugins.yaml"
 GITHUB_ZIP = "%s/archive/master.zip"
@@ -25,9 +26,12 @@ def _parse_plugins(file_name: str = "plugins.yaml") -> Dict:
             plugins_dict = yaml.load(fh, Loader=yaml.FullLoader)
             return plugins_dict
     except Exception:
-        exit
+        return {}
 
-def _append_plugins_list(dest_dir: str, plugin_name: str, plugin_url: str, file_name:str = "plugins.yaml"):
+
+def _append_plugins_list(
+    dest_dir: str, plugin_name: str, plugin_url: str, file_name: str = "plugins.yaml"
+):
     plugins_dict = _parse_plugins(file_name)
     if dest_dir not in plugins_dict:
         plugins_dict[dest_dir] = []
@@ -108,8 +112,9 @@ def install(plugin_url, dest_dir):
         shutil.rmtree(temp_directory)
 
 
-
-
+@cli.command()
+def delete(plugin_name: str):
+    pass
 
 
 if __name__ == "__main__":

@@ -40,7 +40,208 @@ function! s:ExecuteCP(count, isloclist)
 	endtry
 endfunction
 
-function! QFEnter#OpenQFItem(wintype, opencmd, keepfocus, isvisual)
+" GetTabWinNR* functions
+" return value: [tabpagenr, winnr, hasfocus, isnewtabwin]
+" 	tabpagenr: tabpage number of the target window
+"	winnr: window number of the target window
+"   hasfocus: whether the target window already has focus or not
+"   isnewtabwin: 
+"	   - 'nt': the target window is in a newly created tab
+"      - 'nw': the target window is a newly created window
+"      - otherwise: the target window is one of existing windows
+
+function! QFEnter#GetTabWinNR_Open()
+	wincmd p
+	return [tabpagenr(), winnr(), 1, '']
+endfunction
+
+function! QFEnter#GetTabWinNR_VOpen()
+	wincmd p
+	vnew
+	return [tabpagenr(), winnr(), 1, 'nw']
+endfunction
+
+function! QFEnter#GetTabWinNR_HOpen()
+	wincmd p
+	new
+	return [tabpagenr(), winnr(), 1, 'nw']
+endfunction
+
+function! QFEnter#GetTabWinNR_TOpen()
+	let s:qfview = winsaveview()
+
+	let s:modifier = ''
+	let widthratio = winwidth(0)*&lines
+	let heightratio = winheight(0)*&columns
+	if widthratio > heightratio
+		let s:modifier = s:modifier.''
+		let s:qfresize = 'resize '.winheight(0)
+	else
+		let s:modifier = s:modifier.'vert'
+		let s:qfresize = 'vert resize '.winwidth(0)
+	endif
+
+	if winnr() <= winnr('$')/2
+		let s:modifier = s:modifier.' topleft'
+	else
+		let s:modifier = s:modifier.' botright'
+	endif
+
+	" add this line to match the behavior of VOpen() and HOpen()
+	wincmd p
+
+	tabnew
+
+	return [tabpagenr(), winnr(), 1, 'nt']
+endfunction
+
+"qfopencmd: 'cc', 'cn', 'cp'
+function! s:OpenQFItem(tabwinfunc, qfopencmd, qflnum)
+	let lnumqf = a:qflnum
+
+	if len(getloclist(0)) > 0
+		let isloclist = 1
+	else
+		let isloclist = 0
+	endif
+
+	" for g:qfenter_prevtabwin_policy
+	let prev_qf_tabnr = tabpagenr()
+	let prev_qf_winnr = winnr()
+	let orig_prev_qf_winnr = prev_qf_winnr
+
+	" jump to a window or tab in which quickfix item to be opened
+	exec 'let ret = '.a:tabwinfunc.'()'
+	let target_tabnr = ret[0]
+	let target_winnr = ret[1]
+	let hasfocus = ret[2]
+	let target_newtabwin = ret[3]
+	if !hasfocus
+		call s:JumpToTab(target_tabnr)
+		call s:JumpToWin(target_winnr)
+	endif
+
+	if g:qfenter_prevtabwin_policy==#'qf'
+		if target_newtabwin==#'nt'
+			if prev_qf_tabnr >= target_tabnr
+				let prev_qf_tabnr += 1
+			endif
+			call s:JumpToTab(prev_qf_tabnr)
+			call s:JumpToWin(prev_qf_winnr)
+			call s:JumpToTab(target_tabnr)
+		else
+			if target_newtabwin==#'nw' && prev_qf_winnr >= target_winnr
+				let prev_qf_winnr += 1
+			endif
+			call s:JumpToWin(prev_qf_winnr)
+			call s:JumpToWin(target_winnr)
+		endif
+	elseif g:qfenter_prevtabwin_policy==#'none'
+	elseif g:qfenter_prevtabwin_policy==#'legacy'
+		if target_newtabwin==#'nt'
+			if prev_qf_tabnr >= target_tabnr
+				let prev_qf_tabnr += 1
+			endif
+			call s:JumpToTab(prev_qf_tabnr)
+			call s:JumpToWin(prev_qf_winnr)
+			call s:JumpToTab(target_tabnr)
+		endif
+	else
+		echoerr 'QFEnter: '''.g:qfenter_prevtabwin_policy.''' is an undefined value for g:qfenter_prevtabwin_policy.'
+	endif
+
+	let excluded = 0
+	for ft in g:qfenter_exclude_filetypes
+		if ft==#&filetype
+			let excluded = 1
+			break
+		endif
+	endfor
+	if excluded
+		echo "QFEnter: Quickfix items cannot be opened in a '".&filetype."' window"
+		wincmd p
+		return
+	endif
+
+	" execute vim quickfix open commands
+	if a:qfopencmd==#'cc'
+		call s:ExecuteCC(lnumqf, isloclist)
+	elseif a:qfopencmd==#'cn'
+		call s:ExecuteCN(lnumqf, isloclist)
+	elseif a:qfopencmd==#'cp'
+		call s:ExecuteCP(lnumqf, isloclist)
+	endif
+
+	" check if switchbuf applied.
+	" if useopen or usetab are applied with new window or tab command, close
+	" the newly opened tab or window.
+	let qfopened_tabnr = tabpagenr()
+	let qfopened_winnr = winnr()
+	if (match(&switchbuf,'useopen')>-1 || match(&switchbuf,'usetab')>-1)
+		if target_newtabwin==#'nt'
+			if target_tabnr!=qfopened_tabnr
+				call s:JumpToTab(target_tabnr)
+				call s:CloseCurrentTabAndJumpTo(qfopened_tabnr)
+			endif
+		elseif target_newtabwin==#'nw'
+			if target_tabnr!=qfopened_tabnr	|"when 'usetab' applied
+				call s:JumpToTab(target_tabnr)
+
+				" Close The empty, newly created target window and jump to the quickfix window.
+				" When returning from the tab containing the selecte item window to original tab,
+				if g:qfenter_prevtabwin_policy==#'qf' || g:qfenter_prevtabwin_policy==#'leagcy'
+					" the quickfix window should have a focus.
+					call s:CloseCurrentWinAndJumpTo(prev_qf_winnr)
+				else
+					" the original 'wincmd p' window of quickfix should have a focus.
+					" Just 'quit' makes the right or bottom window of the window close which has been newly created,
+					" ti works correctly.
+					quit
+				endif
+
+				call s:JumpToTab(qfopened_tabnr)
+
+			elseif target_winnr!=qfopened_winnr
+				call s:JumpToWin(target_winnr)
+				call s:CloseCurrentWinAndJumpTo(qfopened_winnr)
+
+				" To set quickfix window as a prevous window.
+				"
+				" Let's say we have opened an item with some 'nw' command which had already opened in a window A.
+				" During the opening process, a new window N is created and 'cc' (or other) command 
+				" make the focus jump to A due to the switchbuf option. So window history is quickfix Q - N - A.
+				" Then N is closed. So it should be Q - A, meaning that 'wincmd p' in A make a jump to Q.
+				" BUT the default behavior of vim is not like this. 'wincmd p' in A just stays in A.
+				" This code reconnects Q and A in terms of prev win history.
+				"
+				" Note that checking if g:qfenter_prevtabwin_policy==#'qf' in not necessary
+				" beause the prev window still should be the quickfix window even if the option is 'none'
+				" becuase not a new window but one of existing windows is focused.
+				call s:JumpToWin(orig_prev_qf_winnr)
+				wincmd p
+			endif
+		" if the target window is one of existing windows, do nothing 
+		" because the target window had focused and qfopencmd (such as cc) has moved the focus
+		" to the right window, so there are no remaining artifacts.
+		endif
+	endif
+
+	" restore quickfix window when tab mode
+	if target_newtabwin==#'nt'
+		if g:qfenter_enable_autoquickfix
+			if isloclist
+				exec s:modifier 'lopen'
+			else
+				exec s:modifier 'copen'
+			endif
+			exec s:qfresize
+			call winrestview(s:qfview)
+			wincmd p
+		endif
+	endif
+endfunction
+
+function! QFEnter#OpenQFItem(tabwinfunc, qfopencmd, keepfocus, isvisual)
 	let qfbufnr = bufnr('%')
 	let qflnum = line('.')
 
@@ -48,11 +249,11 @@ function! QFEnter#OpenQFItem(wintype, opencmd, keepfocus, isvisual)
 		let vblnum2 = getpos("'>")[1]
 	endif
 
-	call s:OpenQFItem(a:wintype, a:opencmd, qflnum)
+	call s:OpenQFItem(a:tabwinfunc, a:qfopencmd, qflnum)
 
 	if a:isvisual
 		if qflnum==vblnum2
-			if a:keepfocus=='1'
+			if a:keepfocus==1
 				redraw
 				let qfwinnr = bufwinnr(qfbufnr)
 				exec qfwinnr.'wincmd w'
@@ -62,212 +263,15 @@ function! QFEnter#OpenQFItem(wintype, opencmd, keepfocus, isvisual)
 			exec qfwinnr.'wincmd w'
 		endif
 	else
-		if a:keepfocus=='1'
+		if a:keepfocus==1
 			redraw
 			let qfwinnr = bufwinnr(qfbufnr)
 			exec qfwinnr.'wincmd w'
 		endif
 	endif
-
-	" notification message for deprecated global variables
-	redraw
-	if a:wintype==#'o' && a:opencmd==#'c'
-		if exists('g:qfenter_open_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'open') && g:qfenter_keep_quickfixfocus.open == 1
-				echom "QFEnter: 'g:qfenter_open_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.open_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_open_map' is deprecated. Use 'g:qfenter_keymap.open' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'o' && a:opencmd==#'n'
-		if exists('g:qfenter_cnext_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'cnext') && g:qfenter_keep_quickfixfocus.cnext == 1
-				echom "QFEnter: 'g:qfenter_cnext_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.cnext_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_cnext_map' is deprecated. Use 'g:qfenter_keymap.cnext' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'o' && a:opencmd==#'p'
-		if exists('g:qfenter_cprev_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'cprev') && g:qfenter_keep_quickfixfocus.cprev == 1
-				echom "QFEnter: 'g:qfenter_cprev_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.cprev_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_cprev_map' is deprecated. Use 'g:qfenter_keymap.cprev' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'v' && a:opencmd==#'c'
-		if exists('g:qfenter_vopen_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'open') && g:qfenter_keep_quickfixfocus.open == 1
-				echom "QFEnter: 'g:qfenter_vopen_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.vopen_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_vopen_map' is deprecated. Use 'g:qfenter_keymap.vopen' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'v' && a:opencmd==#'n'
-		if exists('g:qfenter_vcnext_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'cnext') && g:qfenter_keep_quickfixfocus.cnext == 1
-				echom "QFEnter: 'g:qfenter_vcnext_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.vcnext_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_vcnext_map' is deprecated. Use 'g:qfenter_keymap.vcnext' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'v' && a:opencmd==#'p'
-		if exists('g:qfenter_vcprev_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'cprev') && g:qfenter_keep_quickfixfocus.cprev == 1
-				echom "QFEnter: 'g:qfenter_vcprev_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.vcprev_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_vcprev_map' is deprecated. Use 'g:qfenter_keymap.vcprev' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'h' && a:opencmd==#'c'
-		if exists('g:qfenter_hopen_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'open') && g:qfenter_keep_quickfixfocus.open == 1
-				echom "QFEnter: 'g:qfenter_hopen_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.hopen_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_hopen_map' is deprecated. Use 'g:qfenter_keymap.hopen' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'h' && a:opencmd==#'n'
-		if exists('g:qfenter_hcnext_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'cnext') && g:qfenter_keep_quickfixfocus.cnext == 1
-				echom "QFEnter: 'g:qfenter_hcnext_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.hcnext_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_hcnext_map' is deprecated. Use 'g:qfenter_keymap.hcnext' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'h' && a:opencmd==#'p'
-		if exists('g:qfenter_hcprev_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'cprev') && g:qfenter_keep_quickfixfocus.cprev == 1
-				echom "QFEnter: 'g:qfenter_hcprev_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.hcprev_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_hcprev_map' is deprecated. Use 'g:qfenter_keymap.hcprev' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'t' && a:opencmd==#'c'
-		if exists('g:qfenter_topen_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'open') && g:qfenter_keep_quickfixfocus.open == 1
-				echom "QFEnter: 'g:qfenter_topen_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.topen_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_topen_map' is deprecated. Use 'g:qfenter_keymap.topen' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'t' && a:opencmd==#'n'
-		if exists('g:qfenter_tcnext_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'cnext') && g:qfenter_keep_quickfixfocus.cnext == 1
-				echom "QFEnter: 'g:qfenter_tcnext_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.tcnext_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_tcnext_map' is deprecated. Use 'g:qfenter_keymap.tcnext' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	elseif a:wintype==#'t' && a:opencmd==#'p'
-		if exists('g:qfenter_tcprev_map')
-			if exists('g:qfenter_keep_quickfixfocus') && type(g:qfenter_keep_quickfixfocus)==type({}) && has_key(g:qfenter_keep_quickfixfocus, 'cprev') && g:qfenter_keep_quickfixfocus.cprev == 1
-				echom "QFEnter: 'g:qfenter_tcprev_map' and 'g:qfenter_keep_quickfixfocus' are deprecated. Use 'g:qfenter_keymap.tcprev_keep' instead. Please refer :help g:qfenter_keymap."
-			else
-				echom "QFEnter: 'g:qfenter_tcprev_map' is deprecated. Use 'g:qfenter_keymap.tcprev' instead. Please refer :help g:qfenter_keymap."
-			endif
-		endif
-	endif
 endfunction
 
-"wintype: 'o', 'v', 'h', 't'
-"opencmd: 'c', 'n', 'p'
-function! s:OpenQFItem(wintype, opencmd, qflnum)
-	let lnumqf = a:qflnum
-
-	if len(getloclist(0)) > 0
-		let isloclist = 1
-	else
-		let isloclist = 0
-	endif
-
-	" arrange a window or tab in which quickfix item to be opened
-	if a:wintype==#'o'
-		wincmd p
-	elseif a:wintype==#'v'
-		wincmd p
-		vnew
-	elseif a:wintype==#'h'
-		wincmd p
-		new
-	elseif a:wintype==#'t'
-		let qfview = winsaveview()
-
-		let modifier = ''
-		let widthratio = winwidth(0)*&lines
-		let heightratio = winheight(0)*&columns
-		if widthratio > heightratio
-			let modifier = modifier.''
-			let qfresize = 'resize '.winheight(0)
-		else
-			let modifier = modifier.'vert'
-			let qfresize = 'vert resize '.winwidth(0)
-		endif
-
-		if winnr() <= winnr('$')/2
-			let modifier = modifier.' topleft'
-		else
-			let modifier = modifier.' botright'
-		endif
-
-		tabnew
-	endif
-
-	" save current tab or window to check after switchbuf applied when
-	" executing cc, cn, cp commands
-	let before_tabnr = tabpagenr()
-	let before_winnr = winnr()
-
-	" execute vim quickfix open commands
-	if a:opencmd==#'c'
-		call s:ExecuteCC(lnumqf, isloclist)
-	elseif a:opencmd==#'n'
-		call s:ExecuteCN(lnumqf, isloclist)
-	elseif a:opencmd==#'p'
-		call s:ExecuteCP(lnumqf, isloclist)
-	endif
-
-	" check if switchbuf applied.
-	" if useopen or usetab are applied with new window or tab command, close
-	" the newly opened tab or window.
-	let after_tabnr = tabpagenr()
-	let after_winnr = winnr()
-	if (match(&switchbuf,'useopen')>-1 || match(&switchbuf,'usetab')>-1)
-		if a:wintype==#'t'
-			if before_tabnr!=after_tabnr
-				call s:JumpToTab(before_tabnr)
-				call s:CloseTab(after_tabnr)
-			endif
-		elseif a:wintype==#'v'|| a:wintype==#'h'
-			if before_tabnr!=after_tabnr	|"when 'usetab' applied
-				call s:JumpToTab(before_tabnr)
-				call s:CloseWin(after_winnr)
-				call s:JumpToTab(after_tabnr)
-			elseif before_winnr!=after_winnr
-				call s:JumpToWin(before_winnr)
-				call s:CloseWin(after_winnr)
-			endif
-		endif
-	endif
-	"echo before_tabnr after_tabnr
-	"echo before_winnr after_winnr
-
-	" restore quickfix window when tab mode
-	if a:wintype==#'t'
-		if g:qfenter_enable_autoquickfix
-			if isloclist
-				exec modifier 'lopen'
-			else
-				exec modifier 'copen'
-			endif
-			exec qfresize
-			call winrestview(qfview)
-			wincmd p
-		endif
-	endif
-endfunction
-
-fun! s:CloseWin(return_winnr)
+fun! s:CloseCurrentWinAndJumpTo(return_winnr)
 	let prevwinnr = a:return_winnr
 	if prevwinnr > winnr()
 		let prevwinnr = prevwinnr - 1
@@ -282,7 +286,7 @@ fun! s:JumpToWin(winnum)
 	exec a:winnum.'wincmd w'
 endfun
 
-fun! s:CloseTab(return_tabnr)
+fun! s:CloseCurrentTabAndJumpTo(return_tabnr)
 	let prevtabnr = a:return_tabnr
 	if prevtabnr > tabpagenr()
 		let prevtabnr = prevtabnr - 1

@@ -87,6 +87,17 @@ Describe git-messenger.vim
             let mes = execute('message')
             Assert Match(mes, '\<git-messenger: ', mes)
         End
+
+        It works under .github directory (#70)
+            " Close README.md
+            bwipeout!
+
+            view! .github/workflows/ci.yml
+            GitMessenger
+            let p = GetPopup()
+            Assert IsNotNone(p)
+            Assert KeyExists(p, 'bufnr')
+        End
     End
 
     Describe Popup window
@@ -236,6 +247,37 @@ Describe git-messenger.vim
             Assert IsNone(GetPopupNoWait())
 
             Assert Equal(win_getid(), prev_win_id)
+        End
+
+        Describe #63
+            Before all
+                augroup gitmessenger-test-issue-63
+                    autocmd!
+                    autocmd FileType gitmessengerpopup nunmap <buffer>d
+                augroup END
+            End
+
+            After all
+                autocmd! gitmessenger-test-issue-63
+            End
+
+            It is not reproducible
+                GitMessenger
+
+                let p = GetPopup()
+                Assert IsNotNone(p)
+
+                " Enter popup
+                GitMessenger
+                Assert Exists('b:__gitmessenger_popup')
+
+                " 'd' mapping should be unmapped by hook at gitmessengerpopup
+                " filetype event
+                let output = execute('nmap d')
+                " Example of `output` content:
+                "   n  d           *@:<C-U>call b:__gitmessenger_popup.opts.mappings["d"][0]()<CR>
+                Assert NotMatch(output, 'gitmessenger', string(output))
+            End
         End
 
         Describe diff support
@@ -546,6 +588,24 @@ Describe git-messenger.vim
             let [line, col] = [2, 2]
             let name = synIDattr(synID(line, col, 1), 'name')
             Assert Equal(name, 'gitmessengerHeader')
+        End
+
+        It shows author date and committer date separately when they are different
+            " Move to Screenshot title. At point of f1e133c, author date and committer date are
+            " different for this line's commit
+            call search('## Screenshot')
+
+            GitMessenger
+
+            let p = GetPopup()
+            Assert IsNotNone(p)
+            Assert KeyExists(p, 'bufnr')
+
+            let lines = getbufline(p.bufnr, 1, '$')
+            let msg = string(lines)
+
+            Assert Match(lines[4], '^ Author Date: \+\S\+', msg)
+            Assert Match(lines[5], '^ Committer Date: \+\S\+', msg)
         End
 
         Describe lines not committed yet
@@ -1056,6 +1116,60 @@ Describe git-messenger.vim
             Assert True(index(lines, ' -aaa') > 0, msg)
             Assert True(index(lines, ' +xxx') > 0, msg)
             Assert True(index(lines, '  bbb') > 0, msg)
+        End
+    End
+
+    Describe gitmessenger#git#root_dir()
+        Before all
+            let root_dir = './my git root with space'
+            let file = 'file.txt'
+            let path = root_dir . '/' . file
+
+            call mkdir(root_dir)
+            call writefile(['123'], path)
+
+            call Git(root_dir, 'init', '.')
+            call Git(root_dir, 'add', file)
+            call Git(root_dir, 'commit', '-m', 'init')
+        End
+
+        After all
+            if delete(root_dir, 'rf') != 0
+                throw 'delete() failed'
+            endif
+        End
+
+        It returns correct root when pathname contains space
+            " call fnamemodify here the same way
+            " gitmessenger#blame#new() does to get our absolute path
+            let file = './my git root with space/file.txt'
+            let expected_root_dir = fnamemodify(file, ':p:h')
+            let actual_root_dir = gitmessenger#git#root_dir(file)
+
+            " Failure will return the repo root instead of our created
+            " ad-hoc root directory
+            Assert Equal(actual_root_dir, expected_root_dir)
+        End
+    End
+
+    Describe g:git_messenger_date_format
+        Before all
+            let saved_date_format = g:git_messenger_date_format
+        End
+
+        After all
+            let g:git_messenger_date_format = saved_date_format
+        End
+
+        It changes date format
+            " e.g. '2020'
+            let g:git_messenger_date_format = '%Y'
+
+            GitMessenger
+
+            let p = GetPopup()
+            let date = getbufline(p.bufnr, 1, '$')[4]
+            Assert Match(date, '^ Date: \+\d\{4\}$', date)
         End
     End
 End

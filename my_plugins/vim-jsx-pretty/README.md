@@ -9,7 +9,7 @@ The React syntax highlighting and indenting plugin for vim. Also supports the ty
 - ✨ Support React syntax highlighting and indenting for JSX and typescript TSX files.
 - 🏷 Support JSX syntax highlighting and indenting inside the [tagged template](https://github.com/developit/htm) string.
 - 🎨 Support highlighting the close tag separately from the open tag (set `let g:vim_jsx_pretty_highlight_close_tag = 1` in your vimrc).
-- 💪 Many more [corner test cases](test.js) covered.
+- 💪 Many more [corner test cases](test.jsx) covered.
 - 💅 [Reasonable syntax highlight groups](#syntax-group-list), easy for customization.
 
 ## Demo
@@ -62,6 +62,22 @@ your `~/.vimrc`:
     :PlugInstall
     ```
 
+### Using Vim8's package manager
+
+```sh
+mkdir -p ~/.vim/pack/vim-jsx-pretty/start
+cd $_
+git clone git@github.com:MaxMEllon/vim-jsx-pretty.git
+```
+
+#### For Neovim
+
+```sh
+mkdir -p ~/.local/share/nvim/site/vim-jsx-pretty/start
+cd $_
+git clone git@github.com:MaxMEllon/vim-jsx-pretty.git
+```
+
 ## ⚠️ Work with `vim-polyglot`
 
 Since `vim-polyglot` has already embedded this plugin, if you have installed `vim-polyglot`, you don't need to install this plugin anymore. But the bugfix for this plugin may not ship in `vim-polyglot` in time.
@@ -90,6 +106,7 @@ If you still want to use this plugin, make sure that you put this plugin **ahead
 
 |name|default|description|
 |---|---|---|
+|`g:vim_jsx_pretty_disable_js`|0|Disable the syntax highlighting for js files|
 |`g:vim_jsx_pretty_disable_tsx`|0|Disable the syntax highlighting for tsx files|
 |`g:vim_jsx_pretty_template_tags`|`['html', 'jsx']`|highlight JSX inside the tagged template string, set it to `[]` to disable this feature|
 |`g:vim_jsx_pretty_highlight_close_tag`|0|highlight the close tag separately from the open tag|

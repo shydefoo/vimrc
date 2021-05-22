@@ -31,21 +31,28 @@ especially in message of the last commit which modifies the line.
 
 ## Screenshot
 
-- Show popup window with Neovim v0.4.0-dev:
+#### Show popup window with Neovim v0.4.0-dev
 
 <img alt="main screenshot" src="https://github.com/rhysd/ss/blob/master/git-messenger.vim/demo.gif?raw=true" width=763 height=556 />
 
-- Exploring older commits:
+#### Exploring older commits
 
 <img alt="history screenshot" src="https://github.com/rhysd/ss/blob/master/git-messenger.vim/history.gif?raw=true" width=510 height=252 />
 
-- Exploring diff of the commit (you may be also interested in `g:git_messenger_include_diff`):
+#### Exploring diff of the commit (you may be also interested in `g:git_messenger_include_diff`)
 
 <img alt="diff screenshot" src="https://github.com/rhysd/ss/blob/master/git-messenger.vim/diff.gif?raw=true" width=742 height=492 />
 
+#### Switching unified diffs and word diffs
+
+<img alt="word diff screenshot" src="https://github.com/rhysd/ss/blob/master/git-messenger.vim/worddiff.gif?raw=true" width=661 height=492 />
 
 
 ## Installation
+
+Please ensure the following requirement before installing this plugin.
+
+- Git v1.8.5 or later (for `-C` option of `git` command)
 
 If you use any package manager, please follow its instruction.
 
@@ -71,7 +78,7 @@ With [minpac](https://github.com/k-takata/minpac):
 call minpac#add('rhysd/git-messenger.vim')
 ```
 
-When you're using Vim's builtin packager, please follow instruction at `:help pack-add`.
+if you use Vim's builtin packager, please follow the instruction at `:help pack-add`.
 
 To enable a floating window support, you need to install Neovim 0.4 or later.
 Please follow [the official instruction][nvim-install].
@@ -108,6 +115,8 @@ window shows following contents:
 - **Committer:** `Committer: {name}<{email}>` Committer name and mail address of the commit when
   committer is different from author
 - **Date:** `Date: {date}` Author date of the commit in system format
+  - When a committer date and an author date are different (e.g. the commit was created again with
+    `git commit --amend`), both **Author Date:** and **Committer Date:** are shown.
 - **Summary:** First line after `Date:` header line is a summary of commit
 - **Body:** After summary, commit body is put (if the commit has body)
 
@@ -123,12 +132,14 @@ Following mappings are defined within popup window.
 
 | Mapping | Description                                                  |
 |---------|--------------------------------------------------------------|
-|   `q`   | Close the popup window                                       |
-|   `o`   | **o**lder. Back to older commit at the line                  |
-|   `O`   | Opposite to `o`. Forward to newer commit at the line         |
-|   `d`   | Toggle diff hunks only related to current file in the commit |
-|   `D`   | Toggle all diff hunks in the commit                          |
-|   `?`   | Show mappings help                                           |
+| `q`     | Close the popup window                                       |
+| `o`     | **o**lder. Back to older commit at the line                  |
+| `O`     | Opposite to `o`. Forward to newer commit at the line         |
+| `d`     | Toggle unified diff hunks only in current file of the commit |
+| `D`     | Toggle all unified diff hunks of the commit                  |
+| `r`     | Toggle word diff hunks only in current file of the commit    |
+| `R`     | Toggle all word diff hunks of current commit                 |
+| `?`     | Show mappings help                                           |
 
 ### Mappings
 
@@ -172,8 +183,8 @@ When this value is not set to `"none"`, a popup window includes diff hunks of th
 up. `"current"` includes diff hunks of only current file in the commit. `"all"` includes all diff
 hunks in the commit.
 
-Please note that typing `d` and `D` in popup window toggle showing diff hunks even if this value is
-set to `"none"`.
+Please note that typing `d`/`D` or `r`/`R` in popup window toggle showing diff
+hunks even if this value is set to `"none"`.
 
 #### `g:git_messenger_git_command` (Default: `"git"`)
 
@@ -215,6 +226,21 @@ Max lines of popup window in an integer value. Setting `v:null` means no limit.
 #### `g:git_messenger_max_popup_width` (Default: `v:null`)
 
 Max characters of popup window in an integer value. Setting `v:null` means no limit.
+
+#### `g:git_messenger_date_format` (Default: `"%c"`)
+
+String value to format dates in popup window. Please see `:help strftime()` to know the details of
+the format.
+
+```vim
+" Example: '2019 May 26 03:27:43'
+let g:git_messenger_date_format = "%Y %b %d %X"
+```
+
+#### `g:git_messenger_conceal_word_diff_marker` (Default: `v:true`)
+
+When this value is set to `v:true`, markers for word diffs like `[-`, `-]`, `{+`, `+}` are concealed.
+Set `v:false` when you don't want to hide them.
 
 ### Popup Window Highlight
 
@@ -270,7 +296,7 @@ function! s:setup_git_messenger_popup() abort
     nmap <buffer><C-o> o
     nmap <buffer><C-i> O
 endfunction
-autocmd FileType gitmessengerpopup call <SID>s:setup_git_messenger_popup()
+autocmd FileType gitmessengerpopup call <SID>setup_git_messenger_popup()
 ```
 
 ### Health Check
@@ -281,6 +307,10 @@ to check your environment is ready for use of this plugin.
 On Vim, please install [vim-healthcheck](https://github.com/rhysd/vim-healthcheck) and run
 `:CheckHealth`. It's a plugin to run `:checkhealth` on Vim.
 
+### Known Issues
+
+- On Windows, `git` command installed via MSYS does not work. Please use [Git for Windows][git-win]
+  for now. This issue is tracked at [#57](https://github.com/rhysd/git-messenger.vim/issues/57).
 
 
 ## License
@@ -294,4 +324,4 @@ Distributed under [the MIT License](LICENSE)
 [codecov-badge]: https://codecov.io/gh/rhysd/git-messenger.vim/branch/master/graph/badge.svg
 [doc]: ./doc/git-messenger.txt
 [nvim-install]: https://github.com/neovim/neovim/wiki/Installing-Neovim
-
+[git-win]: https://gitforwindows.org/

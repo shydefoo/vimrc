@@ -1,4 +1,4 @@
-## vim-prettier [![Travis CI Build Status](https://travis-ci.org/prettier/vim-prettier.svg?branch=master)](https://travis-ci.org/prettier/vim-prettier) [![Discord](https://img.shields.io/discord/435481502113857536.svg)](https://discord.gg/9bWM9PH)
+## vim-prettier 
 
 A vim plugin wrapper for prettier, pre-configured with custom default prettier
 settings.
@@ -11,7 +11,7 @@ settings.
 Plug 'prettier/vim-prettier', {
   \ 'do': 'yarn install',
   \ 'branch': 'release/0.x'
-}
+  \ }
 ```
 
 ---
@@ -23,6 +23,18 @@ have/support the "@format" pragma annotation in the header of the file.
 ![vim-prettier](/media/vim-prettier.gif?raw=true 'vim-prettier')
 
 ### INSTALL
+
+To install with vim 8+ plugins, simply clone to your `~/.vim/pack/plugins/start` directory, and add `packloadall` to your `.vimrc` (if you haven't already).
+
+```bash
+mkdir -p ~/.vim/pack/plugins/start
+git clone https://github.com/prettier/vim-prettier ~/.vim/pack/plugins/start/vim-prettier
+```
+
+`.vimrc`:
+```vim
+packloadall
+```
 
 Install with [vim-plug](https://github.com/junegunn/vim-plug), assumes node and
 yarn|npm installed globally.
@@ -63,6 +75,20 @@ vim-prettier executable resolution:
 2.  Traverse parents and search for Prettier installation inside `node_modules`
 3.  Look for a global prettier installation
 4.  Use locally installed vim-prettier prettier executable
+
+### Prettier Stylelint
+
+To use an alternative command, like
+[`prettier-stylelint`](https://github.com/hugomrdias/prettier-stylelint), set
+this at the buffer level, e.g.:
+
+```vim
+au FileType css,scss let b:prettier_exec_cmd = "prettier-stylelint"
+```
+
+vim-prettier will look for the executable in the same places it looks for
+`prettier`, and will fall back to `prettier` if it can't find
+`b:prettier_exec_cmd`
 
 ### USAGE
 
@@ -236,6 +262,11 @@ let g:prettier#config#html_whitespace_sensitivity = 'css'
 " false|true
 " default: 'false'
 let g:prettier#config#require_pragma = 'false'
+
+" Define the flavor of line endings
+" lf|crlf|cr|all
+" defaut: 'lf'
+let g:prettier#config#end_of_line = get(g:, 'prettier#config#end_of_line', 'lf')
 ```
 
 ### REQUIREMENT(S)
